@@ -8,6 +8,7 @@ public enum ContentType {
     TEXT_CSS(".css", "text/css;charset=utf-8 "),
     APPLICATION_JAVASCRIPT(".js", "application/javascript "),
     IMAGE_X_ICO(".ico", "image/x-icon "),
+    IMAGE_SVG(".svg", "image/svg+xml "),
     ;
 
     private final String extension;
