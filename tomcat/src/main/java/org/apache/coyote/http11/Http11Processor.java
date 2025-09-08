@@ -48,7 +48,10 @@ public class Http11Processor implements Runnable, Processor {
             }
 
             String requestTarget = requestLine.split(" ")[1];
-            final ContentType contentType = ContentType.getByRequestTarget(requestTarget);
+            ContentType contentType = ContentType.getByRequestTarget(requestTarget);
+            if ("/".equals(requestTarget)) {
+                contentType = ContentType.TEXT_HTML;
+            }
             final byte[] responseBody = getResponseBody(requestLine);
             final String responseHeader = getResponseHeader(contentType.getMimeType(), responseBody.length);
 
