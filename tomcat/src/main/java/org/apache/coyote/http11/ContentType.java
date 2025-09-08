@@ -9,6 +9,7 @@ public enum ContentType {
     APPLICATION_JAVASCRIPT(".js", "application/javascript "),
     IMAGE_X_ICO(".ico", "image/x-icon "),
     IMAGE_SVG(".svg", "image/svg+xml "),
+    OCTET_STREAM("*", "application/octet-stream "),
     ;
 
     private final String extension;
@@ -23,7 +24,7 @@ public enum ContentType {
         return Arrays.stream(values())
             .filter(type -> requestTarget.endsWith(type.extension))
             .findFirst()
-            .orElse(TEXT_HTML);
+            .orElse(OCTET_STREAM);
     }
 
     public String getMimeType() {
