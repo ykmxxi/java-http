@@ -47,7 +47,7 @@ Connection: keep-alive
 
 ## STEP 2
 
-- [ ] `/login` 성공하면 302 코드를 반환하고 `/index.html`로 리다이렉트, 실패하면 `401.html` 리다이렉트
+- [x] `/login` 성공하면 302 코드를 반환하고 `/index.html`로 리다이렉트, 실패하면 `401.html` 리다이렉트
 - [ ] GET /register 응답
   - http://localhost:8080/register 접속하면 회원가입 페이지(register.html)를 보여준다
 - [ ] 회원가입을 누르면 POST 요청을 보내고 회원가입을 완료하면 index.html로 리다이렉트한다

@@ -59,5 +59,24 @@ public class HttpResponse {
 
     public void sendError() {
         statusCode = StatusCode.INTERNAL_SERVER_ERROR;
+        
+        try {
+            outputStream.write(parseStatusLine().getBytes());
+            outputStream.write(parseResponseHeaders().getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void sendRedirect(final String location) {
+        statusCode = StatusCode.FOUND;
+        headers.setHeader("Location", location);
+        
+        try {
+            outputStream.write(parseStatusLine().getBytes());
+            outputStream.write(parseResponseHeaders().getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
