@@ -42,41 +42,35 @@ public class Http11Processor implements Runnable, Processor {
              final var outputStream = connection.getOutputStream();
              final var reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
         ) {
-            final String requestLine = reader.readLine();
-            if (requestLine == null || requestLine.isBlank()) {
-                return;
-            }
+            final HttpRequest request = HttpRequest.from(reader);
+            final HttpResponse response = new HttpResponse(outputStream, request);
 
-            String requestTarget = requestLine.split(" ")[1];
-            ContentType contentType = ContentType.getByRequestTarget(requestTarget);
-            if ("/".equals(requestTarget)) {
-                contentType = ContentType.TEXT_HTML;
-            }
-            final byte[] responseBody = getResponseBody(requestLine);
-            final String responseHeader = getResponseHeader(contentType.getMimeType(), responseBody.length);
-
-            final var response = String.join("\r\n",
-                responseHeader, new String(responseBody, StandardCharsets.UTF_8)
-            );
-
-            outputStream.write(response.getBytes());
-            outputStream.flush();
-        } catch (IOException | UncheckedServletException | URISyntaxException e) {
+            sendResponse(request, response);
+        } catch (IOException | UncheckedServletException e) {
             log.error(e.getMessage(), e);
         }
     }
 
-    private String getResponseHeader(final String contentType, final int contentLength) {
-        return String.join("\r\n",
-            "HTTP/1.1 200 OK ",
-            "Content-Type: " + contentType,
-            "Content-Length: " + contentLength + " ",
-            ""
-        );
+    private void sendResponse(final HttpRequest request, final HttpResponse response) {
+        if (request.isGet()) {
+            String path = request.getPath();
+            try {
+                response.sendOk(getContentType(path), getResponseBody(path));
+            } catch (URISyntaxException | IOException e) {
+                response.sendError();
+            }
+        }
     }
 
-    private byte[] getResponseBody(final String requestLine) throws URISyntaxException, IOException {
-        final String requestTarget = requestLine.split(" ")[1];
+    private ContentType getContentType(final String requestTarget) {
+        try {
+            return ContentType.getByRequestTarget(requestTarget);
+        } catch (IllegalArgumentException e) {
+            return ContentType.TEXT_HTML;
+        }
+    }
+
+    private byte[] getResponseBody(final String requestTarget) throws URISyntaxException, IOException {
         if ("/".equals(requestTarget)) {
             return "Hello world!".getBytes(StandardCharsets.UTF_8);
         }
