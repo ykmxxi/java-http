@@ -32,4 +32,8 @@ public class RequestHeaders {
         }
         throw new IllegalStateException("Content-Length 헤더가 존재하지 않습니다.");
     }
+
+    public String getCookie() {
+        return headers.get("Cookie");
+    }
 }

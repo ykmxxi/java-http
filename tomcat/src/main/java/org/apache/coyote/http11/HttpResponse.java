@@ -25,6 +25,10 @@ public class HttpResponse {
         headers.setHeader(name, value);
     }
 
+    public void addCookie(String cookieValue) {
+        headers.setHeader("Set-Cookie", cookieValue);
+    }
+
     public void sendOk(final ContentType contentType, final byte[] body) {
         statusCode = StatusCode.OK;
         responseBody = body;

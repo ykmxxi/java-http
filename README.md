@@ -54,5 +54,5 @@ Connection: keep-alive
 - [x] 로그인 버튼도 POST 요청으로 변경한다
 - [x] 로그인에 성공하면 쿠키와 세션을 활용해서 로그인 상태를 유지한다
   - 세션 아이디를 전달하는 이름으로 JSESSIONID를 사용
-- [ ] JSESSIONID의 값으로 로그인 여부를 체크한다
+- [x] JSESSIONID의 값으로 로그인 여부를 체크한다
   - 로그인 성공 시 Session 객체의 값으로 User 객체를 저장한다

@@ -66,7 +66,7 @@ public class Http11Processor implements Runnable, Processor {
         String path = request.getPath();
 
         if (path.startsWith("/login")) {
-            handleLoginGet(response);
+            handleLoginGet(request, response);
         } else if (path.startsWith("/register")) {
             handleRegisterGet(response);
         } else {
@@ -78,7 +78,13 @@ public class Http11Processor implements Runnable, Processor {
         }
     }
 
-    private void handleLoginGet(final HttpResponse response) {
+    private void handleLoginGet(final HttpRequest request, final HttpResponse response) {
+        final Session session = request.getSession(false);
+        if (session != null && getUser(session) != null) {
+            response.sendRedirect("/index.html");
+            return;
+        }
+
         try {
             response.sendOk(getContentType("/login.html"), getResponseBody("/login.html"));
         } catch (URISyntaxException | IOException e) {
@@ -122,8 +128,11 @@ public class Http11Processor implements Runnable, Processor {
                 response.sendRedirect("/401.html");
                 return;
             }
-            HttpCookie httpCookie = new HttpCookie();
-            httpCookie.addCookie("JSESSIONID", UUID.randomUUID().toString());
+
+            final Session session = request.getSession(true);
+            final HttpCookie httpCookie = new HttpCookie();
+            session.setAttribute("user", user);
+            httpCookie.addCookie("JSESSIONID", session.getId());
             String cookieValue = httpCookie.getCookies().entrySet().stream()
                 .map(entry -> entry.getKey() + "=" + entry.getValue())
                 .collect(Collectors.joining("; "));
@@ -148,6 +157,10 @@ public class Http11Processor implements Runnable, Processor {
         String email = params.get("email");
         InMemoryUserRepository.save(new User(account, password, email));
         response.sendRedirect("/index.html");
+    }
+
+    private User getUser(Session session) {
+        return (User)session.getAttribute("user");
     }
 
     private Map<String, String> parseFormData(final String body) {

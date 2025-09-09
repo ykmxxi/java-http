@@ -82,4 +82,38 @@ public class HttpRequest {
     public String getBody() {
         return body;
     }
+
+    public Session getSession(boolean create) {
+        String jsessionId = getJSessionIdFromCookie();
+        SessionManager sessionManager = SessionManager.getInstance();
+        
+        if (jsessionId != null) {
+            Session session = sessionManager.findSession(jsessionId);
+            if (session != null) {
+                return session;
+            }
+        }
+        
+        if (create) {
+            return sessionManager.createSession();
+        }
+        
+        return null;
+    }
+
+    private String getJSessionIdFromCookie() {
+        String cookieHeader = headers.getCookie();
+        if (cookieHeader == null) {
+            return null;
+        }
+        
+        for (String cookie : cookieHeader.split(";")) {
+            String[] parts = cookie.trim().split("=");
+            if (parts.length == 2 && "JSESSIONID".equals(parts[0])) {
+                return parts[1];
+            }
+        }
+        
+        return null;
+    }
 }
