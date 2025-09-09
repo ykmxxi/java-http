@@ -8,9 +8,6 @@ public class ResponseHeaders {
 
     private final Map<String, String> headers = new LinkedHashMap<>();
 
-    public ResponseHeaders() {
-    }
-
     public void setHeader(String header, String value) {
         headers.put(header, value);
     }
