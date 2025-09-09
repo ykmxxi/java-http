@@ -21,6 +21,10 @@ public class HttpResponse {
         this.outputStream = outputStream;
     }
 
+    public void addHeader(String name, String value) {
+        headers.setHeader(name, value);
+    }
+
     public void sendOk(final ContentType contentType, final byte[] body) {
         statusCode = StatusCode.OK;
         responseBody = body;
@@ -59,7 +63,7 @@ public class HttpResponse {
 
     public void sendError() {
         statusCode = StatusCode.INTERNAL_SERVER_ERROR;
-        
+
         try {
             outputStream.write(parseStatusLine().getBytes());
             outputStream.write(parseResponseHeaders().getBytes());
@@ -72,7 +76,7 @@ public class HttpResponse {
     public void sendRedirect(final String location) {
         statusCode = StatusCode.FOUND;
         headers.setHeader("Location", location);
-        
+
         try {
             outputStream.write(parseStatusLine().getBytes());
             outputStream.write(parseResponseHeaders().getBytes());

@@ -11,6 +11,8 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.coyote.Processor;
 import org.slf4j.Logger;
@@ -120,6 +122,12 @@ public class Http11Processor implements Runnable, Processor {
                 response.sendRedirect("/401.html");
                 return;
             }
+            HttpCookie httpCookie = new HttpCookie();
+            httpCookie.addCookie("JSESSIONID", UUID.randomUUID().toString());
+            String cookieValue = httpCookie.getCookies().entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .collect(Collectors.joining("; "));
+            response.addHeader("Set-Cookie", cookieValue);
             response.sendRedirect("/index.html");
         } catch (IllegalArgumentException e) {
             response.sendRedirect("/401.html");

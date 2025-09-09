@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class Http11ProcessorTest {
@@ -109,5 +110,6 @@ class Http11ProcessorTest {
         final var result = socket.output();
         assertThat(result).contains("HTTP/1.1 302 Found ");
         assertThat(result).contains("Location: /index.html ");
+        assertThat(result).contains("Set-Cookie: JSESSIONID=");
     }
 }
