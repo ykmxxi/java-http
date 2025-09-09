@@ -48,10 +48,10 @@ Connection: keep-alive
 ## STEP 2
 
 - [x] `/login` 성공하면 302 코드를 반환하고 `/index.html`로 리다이렉트, 실패하면 `401.html` 리다이렉트
-- [ ] GET /register 응답
+- [x] GET /register 응답
   - http://localhost:8080/register 접속하면 회원가입 페이지(register.html)를 보여준다
-- [ ] 회원가입을 누르면 POST 요청을 보내고 회원가입을 완료하면 index.html로 리다이렉트한다
-- [ ] 로그인 버튼도 POST 요청으로 변경한다
+- [x] 회원가입을 누르면 POST 요청을 보내고 회원가입을 완료하면 index.html로 리다이렉트한다
+- [x] 로그인 버튼도 POST 요청으로 변경한다
 - [ ] 로그인에 성공하면 쿠키와 세션을 활용해서 로그인 상태를 유지한다
   - 세션 아이디를 전달하는 이름으로 JSESSIONID를 사용
 - [ ] JSESSIONID의 값으로 로그인 여부를 체크한다
