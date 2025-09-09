@@ -64,7 +64,9 @@ public class Http11Processor implements Runnable, Processor {
         String path = request.getPath();
 
         if (path.startsWith("/login")) {
-            handleLoginGet(request, response);
+            handleLoginGet(response);
+        } else if (path.startsWith("/register")) {
+            handleRegisterGet(response);
         } else {
             try {
                 response.sendOk(getContentType(path), getResponseBody(path));
@@ -74,33 +76,40 @@ public class Http11Processor implements Runnable, Processor {
         }
     }
 
-    private void handleLoginGet(final HttpRequest request, final HttpResponse response) {
-        String fullPath = request.getPath();
-
-        if ("/login".equals(fullPath)) {
-            try {
-                response.sendOk(getContentType("/login.html"), getResponseBody("/login.html"));
-            } catch (URISyntaxException | IOException e) {
-                response.sendError();
-            }
-        } else if (fullPath.startsWith("/login?")) {
-            handleLoginWithParams(fullPath, response);
+    private void handleLoginGet(final HttpResponse response) {
+        try {
+            response.sendOk(getContentType("/login.html"), getResponseBody("/login.html"));
+        } catch (URISyntaxException | IOException e) {
+            response.sendError();
         }
     }
 
-    private void handleLoginWithParams(final String fullPath, final HttpResponse response) {
+    private void handleRegisterGet(final HttpResponse response) {
         try {
-            int index = fullPath.indexOf("?");
-            if (index == -1) {
-                throw new IllegalArgumentException("ID와 PW를 입력해주세요.");
-            }
-            String queryString = fullPath.substring(index + 1);
-            Map<String, String> params = new HashMap<>();
-            for (String param : queryString.split("&")) {
-                String[] keyValue = param.split("=");
-                if (keyValue.length == 2) {
-                    params.put(keyValue[0], keyValue[1]);
-                }
+            response.sendOk(getContentType("/register.html"), getResponseBody("/register.html"));
+        } catch (URISyntaxException | IOException e) {
+            response.sendError();
+        }
+    }
+
+    private void handlePostRequest(final HttpRequest request, final HttpResponse response) {
+        String path = request.getPath();
+        if ("/login".equals(path)) {
+            handleLogin(request, response);
+        }
+        if ("/register".equals(path)) {
+            handleRegister(request, response);
+        }
+    }
+
+    private void handleLogin(final HttpRequest request, final HttpResponse response) {
+        try {
+            String body = request.getBody();
+            Map<String, String> params = parseFormData(body);
+
+            if (!params.containsKey("account") || !params.containsKey("password")) {
+                response.sendRedirect("/401.html");
+                return;
             }
 
             String account = params.get("account");
@@ -112,39 +121,28 @@ public class Http11Processor implements Runnable, Processor {
                 return;
             }
             response.sendRedirect("/index.html");
-        } catch (Exception e) {
-            log.error("Login processing error: " + e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
             response.sendRedirect("/401.html");
         }
     }
 
-    private void handlePostRequest(final HttpRequest request, final HttpResponse response) {
-        String path = request.getPath();
-        if ("/login".equals(path)) {
-            handleLogin(request, response);
-        }
-    }
+    private void handleRegister(final HttpRequest request, final HttpResponse response) {
+        String body = request.getBody();
+        Map<String, String> params = parseFormData(body);
 
-    private void handleLogin(final HttpRequest request, final HttpResponse response) {
-        try {
-            String body = request.getBody();
-            Map<String, String> params = parseFormData(body);
-
-            String account = params.get("account");
-            String password = params.get("password");
-
-            if ("gugu".equals(account) && "password".equals(password)) {
-                response.sendRedirect("/index.html");
-            } else {
-                response.sendRedirect("/401.html");
-            }
-        } catch (Exception e) {
-            log.error("Login processing error: " + e.getMessage(), e);
+        if (!params.containsKey("account") || !params.containsKey("password") || !params.containsKey("email")) {
             response.sendRedirect("/401.html");
+            return;
         }
+
+        String account = params.get("account");
+        String password = params.get("password");
+        String email = params.get("email");
+        InMemoryUserRepository.save(new User(account, password, email));
+        response.sendRedirect("/index.html");
     }
 
-    private Map<String, String> parseFormData(String body) {
+    private Map<String, String> parseFormData(final String body) {
         Map<String, String> params = new HashMap<>();
         if (body != null && !body.isEmpty()) {
             for (String param : body.split("&")) {

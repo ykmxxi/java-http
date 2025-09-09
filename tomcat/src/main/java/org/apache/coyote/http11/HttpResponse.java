@@ -63,6 +63,7 @@ public class HttpResponse {
         try {
             outputStream.write(parseStatusLine().getBytes());
             outputStream.write(parseResponseHeaders().getBytes());
+            outputStream.write(responseBody);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
