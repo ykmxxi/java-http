@@ -58,4 +58,56 @@ class Http11ProcessorTest {
 
         assertThat(socket.output()).isEqualTo(expected);
     }
+
+    @Test
+    void getLogin() throws IOException {
+        // given
+        final String httpRequest= String.join("\r\n",
+            "GET /login HTTP/1.1 ",
+            "Host: localhost:8080 ",
+            "Connection: keep-alive ",
+            "",
+            "");
+
+        final var socket = new StubSocket(httpRequest);
+        final Http11Processor processor = new Http11Processor(socket);
+
+        // when
+        processor.process(socket);
+
+        // then
+        final URL resource = getClass().getClassLoader().getResource("static/login.html");
+        var expected = "HTTP/1.1 200 OK \r\n" +
+            "Content-Type: text/html;charset=utf-8 \r\n" +
+            "Content-Length: 3797 \r\n" +
+            "\r\n"+
+            new String(Files.readAllBytes(new File(resource.getFile()).toPath()));
+
+        assertThat(socket.output()).isEqualTo(expected);
+    }
+
+    @Test
+    void postLoginSuccess() {
+        // given
+        final String httpRequest= String.join("\r\n",
+            "POST /login HTTP/1.1 ",
+            "Host: localhost:8080 ",
+            "Connection: keep-alive ",
+            "Content-Length: 30 ",
+            "Content-Type: application/x-www-form-urlencoded ",
+            "Accept: */*",
+            "",
+            "account=gugu&password=password");
+
+        final var socket = new StubSocket(httpRequest);
+        final Http11Processor processor = new Http11Processor(socket);
+
+        // when
+        processor.process(socket);
+
+        // then
+        final var result = socket.output();
+        assertThat(result).contains("HTTP/1.1 302 Found ");
+        assertThat(result).contains("Location: /index.html ");
+    }
 }
