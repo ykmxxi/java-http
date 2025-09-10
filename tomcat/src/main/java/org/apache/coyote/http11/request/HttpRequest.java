@@ -2,6 +2,8 @@ package org.apache.coyote.http11.request;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.coyote.http11.HttpMethod;
 import org.apache.coyote.http11.Session;
@@ -67,26 +69,6 @@ public class HttpRequest {
         return method.isPost();
     }
 
-    public HttpMethod getMethod() {
-        return method;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public String getProtocol() {
-        return protocol;
-    }
-
-    public RequestHeaders getHeaders() {
-        return headers;
-    }
-
-    public String getBody() {
-        return body;
-    }
-
     public Session getSession(final boolean create) {
         final String jsessionId = getJSessionIdFromCookie();
         final SessionManager sessionManager = SessionManager.getInstance();
@@ -114,5 +96,38 @@ public class HttpRequest {
             }
         }
         return null;
+    }
+
+    public Map<String, String> parseFormData() {
+        Map<String, String> params = new HashMap<>();
+        if (body != null && !body.isEmpty()) {
+            for (String param : body.split("&")) {
+                String[] keyValue = param.split("=");
+                if (keyValue.length == 2) {
+                    params.put(keyValue[0], keyValue[1]);
+                }
+            }
+        }
+        return params;
+    }
+
+    public HttpMethod getMethod() {
+        return method;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public String getProtocol() {
+        return protocol;
+    }
+
+    public RequestHeaders getHeaders() {
+        return headers;
+    }
+
+    public String getBody() {
+        return body;
     }
 }

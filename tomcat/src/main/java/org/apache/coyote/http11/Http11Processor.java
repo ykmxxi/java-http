@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -123,9 +122,7 @@ public class Http11Processor implements Runnable, Processor {
 
     private void handleLogin(final HttpRequest request, final HttpResponse response) {
         try {
-            String body = request.getBody();
-            Map<String, String> params = parseFormData(body);
-
+            Map<String, String> params = request.parseFormData();
             if (!params.containsKey("account") || !params.containsKey("password")) {
                 response.sendRedirect("/401.html");
                 return;
@@ -155,9 +152,7 @@ public class Http11Processor implements Runnable, Processor {
     }
 
     private void handleRegister(final HttpRequest request, final HttpResponse response) {
-        String body = request.getBody();
-        Map<String, String> params = parseFormData(body);
-
+        Map<String, String> params = request.parseFormData();
         if (!params.containsKey("account") || !params.containsKey("password") || !params.containsKey("email")) {
             response.sendRedirect("/401.html");
             return;
@@ -172,19 +167,6 @@ public class Http11Processor implements Runnable, Processor {
 
     private User getUser(Session session) {
         return (User)session.getAttribute("user");
-    }
-
-    private Map<String, String> parseFormData(final String body) {
-        Map<String, String> params = new HashMap<>();
-        if (body != null && !body.isEmpty()) {
-            for (String param : body.split("&")) {
-                String[] keyValue = param.split("=");
-                if (keyValue.length == 2) {
-                    params.put(keyValue[0], keyValue[1]);
-                }
-            }
-        }
-        return params;
     }
 
     private ContentType getContentType(final String requestTarget) {
