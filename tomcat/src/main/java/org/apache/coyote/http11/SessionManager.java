@@ -12,6 +12,10 @@ public class SessionManager {
     private SessionManager() {
     }
 
+    public static SessionManager getInstance() {
+        return INSTANCE;
+    }
+
     public void add(final Session session) {
         SESSIONS.put(session.getId(), session);
     }
@@ -22,10 +26,6 @@ public class SessionManager {
 
     public void remove(final String id) {
         SESSIONS.remove(id);
-    }
-
-    public static SessionManager getInstance() {
-        return INSTANCE;
     }
 
     public Session createSession() {
