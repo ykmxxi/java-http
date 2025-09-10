@@ -11,43 +11,37 @@ import org.apache.coyote.http11.SessionManager;
 
 public class HttpRequest {
 
-    private final HttpMethod method;
-    private final String path;
-    private final String protocol;
+    private final RequestLine requestLine;
     private final RequestHeaders headers;
     private final String body;
 
-    private HttpRequest(HttpMethod method, String path, String protocol, RequestHeaders headers, String body) {
-        this.method = method;
-        this.path = path;
-        this.protocol = protocol;
+    private HttpRequest(final RequestLine requestLine, RequestHeaders headers, String body) {
+        this.requestLine = requestLine;
         this.headers = headers;
         this.body = body;
     }
 
     public static HttpRequest from(final BufferedReader reader) {
         try {
-            final String requestLine = reader.readLine();
-            if (requestLine == null || requestLine.isBlank()) {
+            final String firstLine = reader.readLine();
+            if (firstLine == null || firstLine.isEmpty()) {
                 throw new IllegalArgumentException("HTTP 요청 라인이 존재하지 않습니다.");
             }
-            String[] requestLineToken = requestLine.split(" ");
+            String[] requestLineToken = firstLine.split(" ");
             if (requestLineToken.length != 3) {
                 throw new IllegalArgumentException("HTTP 요청 라인이 형식에 맞지 않습니다.");
             }
 
-            final HttpMethod method = HttpMethod.valueOf(requestLineToken[0]);
-            final String path = requestLineToken[1];
-            final String protocol = requestLineToken[2];
+            final RequestLine requestLine = RequestLine.of(firstLine);
             final RequestHeaders requestHeaders = new RequestHeaders(reader);
-            final String body = getBody(method, requestHeaders, reader);
-            return new HttpRequest(method, path, protocol, requestHeaders, body);
+            final String body = getBody(requestLine, requestHeaders, reader);
+            return new HttpRequest(requestLine, requestHeaders, body);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static String getBody(final HttpMethod method, final RequestHeaders headers, final BufferedReader reader) {
+    private static String getBody(final RequestLine method, final RequestHeaders headers, final BufferedReader reader) {
         if (method.isGet()) {
             return "";
         }
@@ -62,11 +56,11 @@ public class HttpRequest {
     }
 
     public boolean isGet() {
-        return method.isGet();
+        return requestLine.isGet();
     }
 
     public boolean isPost() {
-        return method.isPost();
+        return requestLine.isPost();
     }
 
     public Session getSession(final boolean create) {
@@ -112,15 +106,15 @@ public class HttpRequest {
     }
 
     public HttpMethod getMethod() {
-        return method;
+        return requestLine.getMethod();
     }
 
     public String getPath() {
-        return path;
+        return requestLine.getPath();
     }
 
     public String getProtocol() {
-        return protocol;
+        return requestLine.getProtocol();
     }
 
     public RequestHeaders getHeaders() {
