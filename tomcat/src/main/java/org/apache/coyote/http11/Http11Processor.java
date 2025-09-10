@@ -8,15 +8,18 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.nio.file.Paths;
 import java.util.Map;
-import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.coyote.Processor;
+import org.apache.coyote.http11.request.HttpRequest;
+import org.apache.coyote.http11.response.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.techcourse.db.InMemoryUserRepository;
+import com.techcourse.exception.NotFoundException;
 import com.techcourse.exception.UncheckedServletException;
 import com.techcourse.model.User;
 
@@ -42,74 +45,149 @@ public class Http11Processor implements Runnable, Processor {
              final var outputStream = connection.getOutputStream();
              final var reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))
         ) {
-            final String requestLine = reader.readLine();
-            if (requestLine == null || requestLine.isBlank()) {
-                return;
-            }
+            final HttpRequest request = HttpRequest.from(reader);
+            final HttpResponse response = new HttpResponse(outputStream, request);
 
-            String requestTarget = requestLine.split(" ")[1];
-            final ContentType contentType = ContentType.getByRequestTarget(requestTarget);
-            final byte[] responseBody = getResponseBody(requestLine);
-            final String responseHeader = getResponseHeader(contentType.getMimeType(), responseBody.length);
-
-            final var response = String.join("\r\n",
-                responseHeader, new String(responseBody, StandardCharsets.UTF_8)
-            );
-
-            outputStream.write(response.getBytes());
-            outputStream.flush();
-        } catch (IOException | UncheckedServletException | URISyntaxException e) {
+            sendResponse(request, response);
+        } catch (IOException | UncheckedServletException e) {
             log.error(e.getMessage(), e);
         }
     }
 
-    private String getResponseHeader(final String contentType, final int contentLength) {
-        return String.join("\r\n",
-            "HTTP/1.1 200 OK ",
-            "Content-Type: " + contentType,
-            "Content-Length: " + contentLength + " ",
-            ""
-        );
+    private void sendResponse(final HttpRequest request, final HttpResponse response) {
+        try {
+            if (request.isGet()) {
+                handleGetRequest(request, response);
+            }
+            if (request.isPost()) {
+                handlePostRequest(request, response);
+            }
+        } catch (NotFoundException e) {
+            try {
+                log.info("not found: {}, request: {}", e.getMessage(), request.getPath());
+                response.sendNotFound(ContentType.TEXT_HTML, getResponseBody("/404.html"));
+            } catch (IOException | URISyntaxException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
     }
 
-    private byte[] getResponseBody(final String requestLine) throws URISyntaxException, IOException {
-        final String requestTarget = requestLine.split(" ")[1];
+    private void handleGetRequest(final HttpRequest request, final HttpResponse response) {
+        String path = request.getPath();
+
+        if (path.startsWith("/login")) {
+            handleLoginGet(request, response);
+        } else if (path.startsWith("/register")) {
+            handleRegisterGet(response);
+        } else {
+            try {
+                response.sendOk(getContentType(path), getResponseBody(path));
+            } catch (URISyntaxException | IOException e) {
+                response.sendError();
+            }
+        }
+    }
+
+    private void handleLoginGet(final HttpRequest request, final HttpResponse response) {
+        final Session session = request.getSession(false);
+        if (session != null && getUser(session) != null) {
+            response.sendRedirect("/index.html");
+            return;
+        }
+
+        try {
+            response.sendOk(getContentType("/login.html"), getResponseBody("/login.html"));
+        } catch (URISyntaxException | IOException e) {
+            response.sendError();
+        }
+    }
+
+    private void handleRegisterGet(final HttpResponse response) {
+        try {
+            response.sendOk(getContentType("/register.html"), getResponseBody("/register.html"));
+        } catch (URISyntaxException | IOException e) {
+            response.sendError();
+        }
+    }
+
+    private void handlePostRequest(final HttpRequest request, final HttpResponse response) {
+        String path = request.getPath();
+        if ("/login".equals(path)) {
+            handleLogin(request, response);
+        }
+        if ("/register".equals(path)) {
+            handleRegister(request, response);
+        }
+    }
+
+    private void handleLogin(final HttpRequest request, final HttpResponse response) {
+        try {
+            Map<String, String> params = request.parseFormData();
+            if (!params.containsKey("account") || !params.containsKey("password")) {
+                response.sendRedirect("/401.html");
+                return;
+            }
+
+            String account = params.get("account");
+            String password = params.get("password");
+            User user = InMemoryUserRepository.findByAccount(account)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+            if (!user.checkPassword(password)) {
+                response.sendRedirect("/401.html");
+                return;
+            }
+
+            final Session session = request.getSession(true);
+            final HttpCookie httpCookie = new HttpCookie();
+            session.setAttribute("user", user);
+            httpCookie.addCookie("JSESSIONID", session.getId());
+            String cookieValue = httpCookie.getCookies().entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .collect(Collectors.joining("; "));
+            response.addHeader("Set-Cookie", cookieValue);
+            response.sendRedirect("/index.html");
+        } catch (IllegalArgumentException e) {
+            response.sendRedirect("/401.html");
+        }
+    }
+
+    private void handleRegister(final HttpRequest request, final HttpResponse response) {
+        Map<String, String> params = request.parseFormData();
+        if (!params.containsKey("account") || !params.containsKey("password") || !params.containsKey("email")) {
+            response.sendRedirect("/401.html");
+            return;
+        }
+
+        String account = params.get("account");
+        String password = params.get("password");
+        String email = params.get("email");
+        InMemoryUserRepository.save(new User(account, password, email));
+        response.sendRedirect("/index.html");
+    }
+
+    private User getUser(Session session) {
+        return (User)session.getAttribute("user");
+    }
+
+    private ContentType getContentType(final String requestTarget) {
+        try {
+            return ContentType.getByRequestTarget(requestTarget);
+        } catch (IllegalArgumentException e) {
+            return ContentType.TEXT_HTML;
+        }
+    }
+
+    private byte[] getResponseBody(final String requestTarget) throws URISyntaxException, IOException {
         if ("/".equals(requestTarget)) {
             return "Hello world!".getBytes(StandardCharsets.UTF_8);
         }
-        if (requestTarget.startsWith("/login")) {
-            int index = requestTarget.indexOf("?");
-            if (index == -1) {
-                throw new IllegalArgumentException("ID와 PW를 입력해주세요.");
-            }
-            String path = requestTarget.substring(0, index);
-            String queryString = requestTarget.substring(index + 1);
-            Map<String, String> params = new HashMap<>();
-            for (String param : queryString.split("&")) {
-                String[] keyValue = param.split("=");
-                if (keyValue.length == 2) {
-                    params.put(keyValue[0], keyValue[1]);
-                }
-            }
-
-            User user = InMemoryUserRepository.findByAccount(params.get("account"))
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
-            if (!user.checkPassword(params.get("password"))) {
-                throw new IllegalArgumentException("ID 또는 PW가 일치하지 않습니다.");
-            }
-            log.info("로그인 성공. user: {}", user);
-            log.info("path: {}", path);
-
-            final Path resourcePath = Path.of(Objects.requireNonNull(
-                getClass().getClassLoader()
-                    .getResource(String.join("", "static", path + ".html"))
-            ).toURI());
-            return Files.readAllBytes(resourcePath);
-        }
-        final Path resourcePath = Path.of(Objects.requireNonNull(
-            getClass().getClassLoader()
+        try {
+            final Path resourcePath = Paths.get(getClass().getClassLoader()
                 .getResource(String.join("", "static", requestTarget))
-        ).toURI());
-        return Files.readAllBytes(resourcePath);
+                .toURI());
+            return Files.readAllBytes(resourcePath);
+        } catch (NullPointerException e) {
+            throw new NotFoundException("존재하지 않는 리소스입니다.");
+        }
     }
 }
