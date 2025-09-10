@@ -8,17 +8,19 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.coyote.Processor;
+import org.apache.coyote.http11.request.HttpRequest;
+import org.apache.coyote.http11.response.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.techcourse.db.InMemoryUserRepository;
+import com.techcourse.exception.NotFoundException;
 import com.techcourse.exception.UncheckedServletException;
 import com.techcourse.model.User;
 
@@ -54,11 +56,20 @@ public class Http11Processor implements Runnable, Processor {
     }
 
     private void sendResponse(final HttpRequest request, final HttpResponse response) {
-        if (request.isGet()) {
-            handleGetRequest(request, response);
-        }
-        if (request.isPost()) {
-            handlePostRequest(request, response);
+        try {
+            if (request.isGet()) {
+                handleGetRequest(request, response);
+            }
+            if (request.isPost()) {
+                handlePostRequest(request, response);
+            }
+        } catch (NotFoundException e) {
+            try {
+                log.info("not found: {}, request: {}", e.getMessage(), request.getPath());
+                response.sendNotFound(ContentType.TEXT_HTML, getResponseBody("/404.html"));
+            } catch (IOException | URISyntaxException ex) {
+                throw new RuntimeException(ex);
+            }
         }
     }
 
@@ -188,10 +199,13 @@ public class Http11Processor implements Runnable, Processor {
         if ("/".equals(requestTarget)) {
             return "Hello world!".getBytes(StandardCharsets.UTF_8);
         }
-        final Path resourcePath = Path.of(Objects.requireNonNull(
-            getClass().getClassLoader()
+        try {
+            final Path resourcePath = Paths.get(getClass().getClassLoader()
                 .getResource(String.join("", "static", requestTarget))
-        ).toURI());
-        return Files.readAllBytes(resourcePath);
+                .toURI());
+            return Files.readAllBytes(resourcePath);
+        } catch (NullPointerException e) {
+            throw new NotFoundException("존재하지 않는 리소스입니다.");
+        }
     }
 }

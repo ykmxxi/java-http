@@ -1,8 +1,11 @@
-package org.apache.coyote.http11;
+package org.apache.coyote.http11.response;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
+
+import org.apache.coyote.http11.ContentType;
+import org.apache.coyote.http11.request.HttpRequest;
 
 public class HttpResponse {
 
@@ -59,6 +62,14 @@ public class HttpResponse {
         responseBody = body;
         headers.setHeader("Content-Type", contentType.getMimeType());
         headers.setHeader("Content-Length", String.valueOf(body.length));
+
+        try {
+            outputStream.write(parseStatusLine().getBytes());
+            outputStream.write(parseResponseHeaders().getBytes());
+            outputStream.write(responseBody);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void sendError() {
