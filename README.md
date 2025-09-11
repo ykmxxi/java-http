@@ -58,10 +58,10 @@ Connection: keep-alive
   - 로그인 성공 시 Session 객체의 값으로 User 객체를 저장한다
 
 ## STEP 3
-- [ ] `HttpRequest` 클래스 구현
+- [x] `HttpRequest` 클래스 구현
   - `RequestLine` 클래스 추가
-- [ ] `HttpResponse` 클래스 구현
-- [ ] `Controller` 인터페이스 추가
+- [x] `HttpResponse` 클래스 구현
+- [x] `Controller` 인터페이스 추가
   - HTTP 요청, 응답을 다른 객체에게 역할을 맡기고 나니까 uri 경로에 따른 if 분기 처리가 남는다
   - if 분기 리팩터링 -> 컨트롤러 인터페이스를 추가하고 로직마다 `AbstractController`를 상속한 구현체로 만든다
   - HttpRequest 객체 요청을 처리할 컨트롤러 객체를 구현한다

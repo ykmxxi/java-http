@@ -57,23 +57,9 @@ public class HttpResponse {
         return headerLines.toString();
     }
 
-    public void sendNotFound(final ContentType contentType, final byte[] body) {
-        statusCode = StatusCode.NOT_FOUND;
-        responseBody = body;
-        headers.setHeader("Content-Type", contentType.getMimeType());
-        headers.setHeader("Content-Length", String.valueOf(body.length));
-
-        try {
-            outputStream.write(parseStatusLine().getBytes());
-            outputStream.write(parseResponseHeaders().getBytes());
-            outputStream.write(responseBody);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public void sendError() {
+    public void sendError(byte[] body) {
         statusCode = StatusCode.INTERNAL_SERVER_ERROR;
+        responseBody = body;
 
         try {
             outputStream.write(parseStatusLine().getBytes());
