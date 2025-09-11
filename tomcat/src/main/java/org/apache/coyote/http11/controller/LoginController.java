@@ -3,7 +3,6 @@ package org.apache.coyote.http11.controller;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.coyote.http11.ContentType;
 import org.apache.coyote.http11.HttpCookie;
@@ -34,33 +33,39 @@ public class LoginController extends AbstractController {
     @Override
     protected void doPost(HttpRequest request, HttpResponse response) throws Exception {
         try {
-            Map<String, String> params = request.parseFormData();
-            if (!params.containsKey("account") || !params.containsKey("password")) {
-                response.setRedirectionResponse("/401.html");
-                return;
-            }
-
-            String account = params.get("account");
-            String password = params.get("password");
-            User user = InMemoryUserRepository.findByAccount(account)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
-            if (!user.checkPassword(password)) {
-                response.setRedirectionResponse("/401.html");
+            User user = findUser(request, response);
+            if (user == null) {
                 return;
             }
 
             final Session session = request.getSession(true);
-            final HttpCookie httpCookie = new HttpCookie();
             session.setAttribute("user", user);
+            final HttpCookie httpCookie = new HttpCookie();
             httpCookie.addCookie("JSESSIONID", session.getId());
-            String cookieValue = httpCookie.getCookies().entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .collect(Collectors.joining("; "));
+            final String cookieValue = httpCookie.getCookieValue();
             response.addHeader("Set-Cookie", cookieValue);
             response.setRedirectionResponse("/index.html");
         } catch (IllegalArgumentException e) {
             response.setRedirectionResponse("/401.html");
         }
+    }
+
+    private User findUser(HttpRequest request, HttpResponse response) {
+        final Map<String, String> params = request.parseFormData();
+        if (!params.containsKey("account") || !params.containsKey("password")) {
+            response.setRedirectionResponse("/401.html");
+            return null;
+        }
+
+        final String account = params.get("account");
+        final String password = params.get("password");
+        final User user = InMemoryUserRepository.findByAccount(account)
+            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+        if (!user.checkPassword(password)) {
+            response.setRedirectionResponse("/401.html");
+            return null;
+        }
+        return user;
     }
 
     private User getUser(Session session) {
