@@ -16,9 +16,9 @@ public class RegisterController extends AbstractController {
     @Override
     protected void doGet(HttpRequest request, HttpResponse response) throws Exception {
         try {
-            response.sendOk(ContentType.TEXT_HTML, getResponseBody("/register.html"));
+            response.setOkResponse(ContentType.TEXT_HTML, getResponseBody("/register.html"));
         } catch (URISyntaxException | IOException e) {
-            response.sendError(getResponseBody("/500.html"));
+            response.setErrorResponse(getResponseBody("/500.html"));
         }
     }
 
@@ -26,7 +26,7 @@ public class RegisterController extends AbstractController {
     protected void doPost(HttpRequest request, HttpResponse response) throws Exception {
         final Map<String, String> params = request.parseFormData();
         if (!params.containsKey("account") || !params.containsKey("password") || !params.containsKey("email")) {
-            response.sendRedirect("/401.html");
+            response.setRedirectionResponse("/401.html");
             return;
         }
 
@@ -34,6 +34,6 @@ public class RegisterController extends AbstractController {
         final String password = params.get("password");
         final String email = params.get("email");
         InMemoryUserRepository.save(new User(account, password, email));
-        response.sendRedirect("/index.html");
+        response.setRedirectionResponse("/index.html");
     }
 }

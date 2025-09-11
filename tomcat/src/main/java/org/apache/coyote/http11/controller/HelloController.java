@@ -8,6 +8,6 @@ public class HelloController extends AbstractController {
 
     @Override
     protected void doGet(HttpRequest request, HttpResponse response) {
-        response.sendOk(ContentType.TEXT_HTML, "Hello world!".getBytes());
+        response.setOkResponse(ContentType.TEXT_HTML, "Hello world!".getBytes());
     }
 }

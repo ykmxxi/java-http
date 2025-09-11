@@ -8,9 +8,9 @@ public class StaticResourceController extends AbstractController {
     @Override
     protected void doGet(HttpRequest request, HttpResponse response) throws Exception {
         try {
-            response.sendOk(getContentType(request.getPath()), getResponseBody(request.getPath()));
+            response.setOkResponse(getContentType(request.getPath()), getResponseBody(request.getPath()));
         } catch (IllegalArgumentException e) {
-            response.sendError(getResponseBody("/404.html"));
+            response.setErrorResponse(getResponseBody("/404.html"));
         }
     }
 }

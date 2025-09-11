@@ -20,14 +20,14 @@ public class LoginController extends AbstractController {
     protected void doGet(HttpRequest request, HttpResponse response) throws Exception {
         final Session session = request.getSession(false);
         if (session != null && getUser(session) != null) {
-            response.sendRedirect("/index.html");
+            response.setRedirectionResponse("/index.html");
             return;
         }
 
         try {
-            response.sendOk(ContentType.TEXT_HTML, getResponseBody("/login.html"));
+            response.setOkResponse(ContentType.TEXT_HTML, getResponseBody("/login.html"));
         } catch (URISyntaxException | IOException e) {
-            response.sendError(getResponseBody("/500.html"));
+            response.setErrorResponse(getResponseBody("/500.html"));
         }
     }
 
@@ -36,7 +36,7 @@ public class LoginController extends AbstractController {
         try {
             Map<String, String> params = request.parseFormData();
             if (!params.containsKey("account") || !params.containsKey("password")) {
-                response.sendRedirect("/401.html");
+                response.setRedirectionResponse("/401.html");
                 return;
             }
 
@@ -45,7 +45,7 @@ public class LoginController extends AbstractController {
             User user = InMemoryUserRepository.findByAccount(account)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
             if (!user.checkPassword(password)) {
-                response.sendRedirect("/401.html");
+                response.setRedirectionResponse("/401.html");
                 return;
             }
 
@@ -57,9 +57,9 @@ public class LoginController extends AbstractController {
                 .map(entry -> entry.getKey() + "=" + entry.getValue())
                 .collect(Collectors.joining("; "));
             response.addHeader("Set-Cookie", cookieValue);
-            response.sendRedirect("/index.html");
+            response.setRedirectionResponse("/index.html");
         } catch (IllegalArgumentException e) {
-            response.sendRedirect("/401.html");
+            response.setRedirectionResponse("/401.html");
         }
     }
 
