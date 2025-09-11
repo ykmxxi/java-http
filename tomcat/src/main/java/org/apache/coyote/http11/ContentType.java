@@ -19,9 +19,9 @@ public enum ContentType {
         this.mimeType = mimeType;
     }
 
-    public static ContentType getByRequestTarget(final String requestTarget) {
+    public static ContentType getByPath(final String path) {
         return Arrays.stream(values())
-            .filter(type -> requestTarget.endsWith(type.extension))
+            .filter(type -> path.endsWith(type.extension))
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 ContentType 입니다."));
     }
