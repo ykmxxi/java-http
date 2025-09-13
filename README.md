@@ -92,4 +92,4 @@ public class RequestMapping {
 
 ## STEP 4
 - [x] ExecutorService로 Thread Pool 관리 적용
-- [ ] 세션 관리에 동시성 컬렉션 사용
+- [x] 세션 관리에 동시성 컬렉션 사용
